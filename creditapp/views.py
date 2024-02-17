@@ -101,12 +101,12 @@ class RegisterCustomerView(APIView):
 
 
 
-{
-  "customer_id": 123,
-  "loan_amount": 10000.0,
-  "interest_rate": 10.0,
-  "tenure": 12
-}
+# {
+#   "customer_id": 123,
+#   "loan_amount": 10000.0,
+#   "interest_rate": 10.0,
+#   "tenure": 12
+# }
 class LoanEligibilityCheckView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
