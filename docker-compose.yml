@@ -8,6 +8,7 @@ services:
       POSTGRES_PASSWORD: skilly1234
     volumes:
       - postgres_data:/var/lib/postgresql/data/
+
   web:
     build: .
     command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
@@ -21,3 +22,9 @@ services:
 networks:
   develop-net:
     driver: bridge
+
+volumes:
+  postgres_data:
+
+
+# docker-compose up
