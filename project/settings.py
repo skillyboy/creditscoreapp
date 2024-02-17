@@ -91,6 +91,19 @@ WSGI_APPLICATION = 'project.wsgi.application'
 
 
 
+
+DATABASES = {
+    "default": {
+        "ENGINE": os.environ.get("django.db.backends.sqlite3"),
+        "NAME": os.environ.get("skillydb", BASE_DIR / "db.sqlite3"),
+        "USER": os.environ.get("skillyboy", "user"),
+        "PASSWORD": os.environ.get("skilly1234", "password"),
+        "HOST": '127.0.0.1',
+        'PORT': 5432,
+    }
+}
+
+
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.postgresql',
@@ -101,20 +114,6 @@ WSGI_APPLICATION = 'project.wsgi.application'
 #         'PORT': 5432,
 #     }
 # }
-
-DATABASES = {
-    "default": {
-        "ENGINE": os.environ.get("django.db.backends.sqlite3"),
-        "NAME": os.environ.get("skillydb", BASE_DIR / "db.sqlite3"),
-        "USER": os.environ.get("skillyboy", "user"),
-        "PASSWORD": os.environ.get("skilly1234", "password"),
-        "HOST": '127.0.0.1',
-        'PORT': 5432,
-
-    }
-}
-
-
 
 # DATABASES = {
 #     'default': {
