@@ -1,22 +1,17 @@
 version: '3'
-
 services:
   db:
     image: postgres
     environment:
-      POSTGRES_DB: skillysdb
-      POSTGRES_USER: skillyboy
-      POSTGRES_PASSWORD: skilly1234
-    ports:
-      - "8000:8000"
-
+      POSTGRES_DB: creditapp_db
+      POSTGRES_USER: creditapp_user
+      POSTGRES_PASSWORD: secret_password
   web:
     build: .
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
-      - ./project/creditapp:/code
+      - .:/app
     ports:
       - "8000:8000"
     depends_on:
       - db
-
