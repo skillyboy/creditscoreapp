@@ -17,6 +17,10 @@ services:
       - "8000:8000"
     depends_on:
       - db
-  networks:
-    develop-net:
-      driver: bridge
+
+networks:
+  develop-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
