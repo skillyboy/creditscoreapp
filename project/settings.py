@@ -26,7 +26,8 @@ SECRET_KEY = 'django-insecure-*c7(u&pmzo5xcq8!n-756c#yi+jneyxu_(#ynpi-zt(c9g9(py
 DEBUG = True
 
 
-ALLOWED_HOSTS = ['localhost','127.0.0.1']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+
 
 
 # Application definition
@@ -90,30 +91,18 @@ WSGI_APPLICATION = 'project.wsgi.application'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 
-
-
 DATABASES = {
     "default": {
-        "ENGINE": os.environ.get("django.db.backends.sqlite3"),
-        "NAME": os.environ.get("skillydb", BASE_DIR / "db.sqlite3"),
-        "USER": os.environ.get("skillyboy", "user"),
-        "PASSWORD": os.environ.get("skilly1234", "password"),
+        "ENGINE": os.environ.get("django.db.backends.postgresql","django.db.backends.sqlite3"),
+        "NAME": os.environ.get("interdb", BASE_DIR / "db.sqlite3"),
+        "USER": os.environ.get("postgres"),
+        "PASSWORD": os.environ.get("skilly1234"),
         "HOST": '127.0.0.1',
         'PORT': 5432,
     }
 }
 
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'postgres',
-#         'USER': 'postgres',
-#         'PASSWORD': 'postgres',
-#         'HOST': 'db',
-#         'PORT': 5432,
-#     }
-# }
 
 # DATABASES = {
 #     'default': {
