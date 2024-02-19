@@ -1,19 +1,27 @@
 version: '3'
 
 services:
+  django_app:
+    build:
+      context: .
+      dockerfile: Dockerfile.django
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+    volumes:
+      - ./project:/app 
+    depends_on:
+      - db
+
   db:
     image: postgres:latest
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: DfD6BdFa5DFAG1DagAf6B26c3a5DdFbC
-      POSTGRES_DB: railway
-
-  web:
-    build: .
-    command: python manage.py runserver 0.0.0.0:8000
+      - POSTGRES_DB=railway
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=DfD6BdFa5DFAG1DagAf6B26c3a5DdFbC
     volumes:
-      - .:/app
-    ports:
-      - "8000:8000"
-    depends_on:
-      - db
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
