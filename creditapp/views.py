@@ -1,42 +1,24 @@
-
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import *
-from .models import Loan, Customer
-
-import pandas as pd
-from django.http import HttpResponse
-
-
-
-
-from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
-from django.http import JsonResponse
-
 from rest_framework.parsers import JSONParser
-
-from django.http import JsonResponse
-from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
-
 from django.db.models import Sum
-
-from rest_framework.views import APIView
-from creditapp.utils import *
-
+from django.urls import reverse_lazy
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db.utils import IntegrityError
+from decimal import Decimal
 
-
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
 from .serializers import *
 from .models import Loan, Customer
+import pandas as pd
+from creditapp.utils import *
+
 
 # {
 #   "first_name": "John",
@@ -95,18 +77,14 @@ class RegisterCustomerView(APIView):
 
 
 
+# {
+#   "customer_id": 123,
+#   "loan_amount": 10000.0,
+#   "interest_rate": 10.0,
+#   "tenure": 12
+# }
 
 
-
-
-
-
-{
-  "customer_id": 123,
-  "loan_amount": 10000.0,
-  "interest_rate": 10.0,
-  "tenure": 12
-}
 class LoanEligibilityCheckView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
@@ -116,56 +94,61 @@ class LoanEligibilityCheckView(APIView):
         data = request.data
         customer_id = data.get('customer_id')
 
-        # Check if customer_id is provided
         if customer_id is None:
-            response_data = {
-                'error': 'Customer ID is not provided.'
-            }
-            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Customer ID is not provided.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Check for the presence of other required fields
-        required_fields = ['loan_amount', 'tenure', 'interest_rate']
-        missing_fields = [field for field in required_fields if field not in data]
-
-        if missing_fields:
-            response_data = {
-                'error': f'Missing fields: {", ".join(missing_fields)}.'
-            }
-            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
-
-        # Validate and handle missing loan_amount and tenure fields
         try:
-            loan_amount = int(data['loan_amount'])
-            tenure = int(data['tenure'])
-            interest_rate = float(data['interest_rate'])
-        except (ValueError, TypeError):
-            response_data = {
-                'error': 'Invalid data types for loan_amount, tenure, or interest_rate.'
-            }
-            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+            customer = Customer.objects.get(id=customer_id)
+        except Customer.DoesNotExist:
+            return Response({'error': 'Customer does not exist.'}, status=status.HTTP_404_NOT_FOUND)
 
-        # Calculate monthly installment
-        monthly_installment = calculate_monthly_repayment(loan_amount, tenure, interest_rate)
+        loan_amount = Decimal(data.get('loan_amount'))
+        interest_rate = Decimal(data.get('interest_rate'))
+        tenure = int(data.get('tenure'))
 
-        # Calculate credit rating
-        credit_rating = calculate_credit_score(customer_id)
+        loans = Loan.objects.filter(customer_id=customer_id)
+        credit_score = calculate_credit_score(customer, loans)
 
-        # Construct response data
-        response_data = {
+        if credit_score <= 10:
+            return Response({'customer_id': customer_id, 'approval': False, 'interest_rate': None, 'corrected_interest_rate': None, 'tenure': None, 'monthly_installment': None})
+
+        approved_limit = customer.monthly_income * Decimal('36')
+        total_current_loan_amount = loans.aggregate(Sum('loan_amount'))['loan_amount__sum'] or Decimal('0')
+
+        if total_current_loan_amount > approved_limit:
+            return Response({'customer_id': customer_id, 'approval': False, 'interest_rate': None, 'corrected_interest_rate': None, 'tenure': None, 'monthly_installment': None})
+
+        monthly_installment = calculate_monthly_repayment(loan_amount, interest_rate, tenure)
+
+        if monthly_installment > customer.monthly_income * Decimal('0.5'):
+            return Response({'customer_id': customer_id, 'approval': False, 'interest_rate': None, 'corrected_interest_rate': None, 'tenure': None, 'monthly_installment': None})
+
+        approval_status = None
+        corrected_interest_rate = None
+
+        if credit_score > 50:
+            approval_status = True
+            interest_rate = interest_rate
+            corrected_interest_rate = interest_rate
+        elif 30 < credit_score <= 50:
+            approval_status = True
+            if interest_rate < 12:
+                corrected_interest_rate = 12
+        elif 10 < credit_score <= 30:
+            approval_status = True
+            if interest_rate < 16:
+                corrected_interest_rate = 16
+        else:
+            approval_status = False
+
+        return Response({
             'customer_id': customer_id,
-            'loan_amount': loan_amount,
+            'approval': approval_status,
+            'interest_rate': float(interest_rate),
+            'corrected_interest_rate': float(corrected_interest_rate) if corrected_interest_rate else None,
             'tenure': tenure,
-            'interest_rate': interest_rate,
-            'monthly_installment': monthly_installment,
-            'credit_rating': credit_rating
-        }
-
-        # Check loan approval based on credit rating (similar to your existing logic)
-
-        return Response(response_data)
-
-
-
+            'monthly_installment': float(monthly_installment)
+        })
 
 
 # {
@@ -174,6 +157,7 @@ class LoanEligibilityCheckView(APIView):
 #     "interest_rate": 8.5,
 #     "tenure": 12
 # }
+
 class CreateLoanView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
@@ -206,51 +190,46 @@ class CreateLoanView(APIView):
             return Response({'error': 'Customer does not exist.'}, status=status.HTTP_404_NOT_FOUND)
 
         # Calculate monthly installment
-        monthly_installment = calculate_monthly_repayment(loan_amount, tenure, interest_rate)
+        monthly_installment = calculate_monthly_repayment(loan_amount, interest_rate, tenure)
 
         # Calculate credit score
-        credit_score = calculate_credit_score(customer_id)
+        loans = Loan.objects.filter(customer_id=customer_id)
+        credit_score = calculate_credit_score(customer, loans)
 
-        # Determine loan approval based on credit score
-        loan_approved = False
-        message = ""
-
+        # Determine loan approval and interest rate based on credit score
         if credit_score > 50:
-            loan_approved = True
-            if interest_rate > 12:
-                message = "Loan approved with corrected interest rate."
-            else:
-                message = "Loan approved."
+            approval_status = True
+            corrected_interest_rate = interest_rate
+            message = "Loan approved."
         elif 30 < credit_score <= 50:
-            if interest_rate > 12:
-                loan_approved = True
-                message = "Loan approved with corrected interest rate."
-            else:
-                message = "Loan not approved due to low credit rating and interest rate."
+            approval_status = True
+            corrected_interest_rate = max(12, interest_rate)
+            message = "Loan approved with corrected interest rate."
         else:
+            approval_status = False
+            corrected_interest_rate = None
             message = "Loan not approved due to low credit rating."
 
         # Create loan record if approved
-        if loan_approved:
+        loan_id = None
+        if approval_status:
             try:
                 loan = Loan.objects.create(
                     customer=customer,
                     loan_amount=loan_amount,
-                    interest_rate=interest_rate,
+                    interest_rate=corrected_interest_rate,
                     tenure=tenure,
                     monthly_installment=monthly_installment
                 )
                 loan_id = loan.id
             except IntegrityError:
                 return Response({'error': 'Error creating loan.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        else:
-            loan_id = None
 
         # Construct response body
         response_data = {
             'loan_id': loan_id,
             'customer_id': customer_id,
-            'loan_approved': loan_approved,
+            'loan_approved': approval_status,
             'message': message,
             'monthly_installment': monthly_installment
         }
@@ -263,6 +242,7 @@ class ViewLoanDetails(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
     parser_classes = [JSONParser]
+
     def get(self, request, loan_id):
         # Retrieve loan details
         loan = get_object_or_404(Loan, pk=loan_id)

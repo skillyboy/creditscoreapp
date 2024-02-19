@@ -91,16 +91,30 @@ WSGI_APPLICATION = 'project.wsgi.application'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 
+
 DATABASES = {
     "default": {
-        "ENGINE": os.environ.get("django.db.backends.postgresql","django.db.backends.sqlite3"),
-        "NAME": os.environ.get("interdb", BASE_DIR / "db.sqlite3"),
-        "USER": os.environ.get("postgres"),
-        "PASSWORD": os.environ.get("skilly1234"),
-        "HOST": '127.0.0.1',
-        'PORT': 5432,
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "railway",
+        "USER": "postgres",
+        "PASSWORD": "DfD6BdFa5DFAG1DagAf6B26c3a5DdFbC",
+        "HOST": 'viaduct.proxy.rlwy.net',
+        'PORT': 14395,
     }
 }
+
+
+
+# DATABASES = {
+#     "default": {
+#         "ENGINE": os.environ.get("django.db.backends.postgresql","django.db.backends.sqlite3"),
+#         "NAME": os.environ.get("interdb", BASE_DIR / "db.sqlite3"),
+#         "USER": os.environ.get("postgres"),
+#         "PASSWORD": os.environ.get("skilly1234"),
+#         "HOST": '127.0.0.1',
+#         'PORT': 5432,
+#     }
+# }
 
 
 
