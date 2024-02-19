@@ -28,7 +28,7 @@ from creditapp.utils import *
 #   "age": 35,
 #   "monthly_income": 5000.0
 # }
-
+# /register
 class RegisterCustomerView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
@@ -83,8 +83,7 @@ class RegisterCustomerView(APIView):
 #   "interest_rate": 10.0,
 #   "tenure": 12
 # }
-
-
+# /check-eligibility
 class LoanEligibilityCheckView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
@@ -157,6 +156,7 @@ class LoanEligibilityCheckView(APIView):
 #     "interest_rate": 8.5,
 #     "tenure": 12
 # }
+#  /create-loan
 
 class CreateLoanView(APIView):
     authentication_classes = []
@@ -237,7 +237,7 @@ class CreateLoanView(APIView):
         return Response(response_data, status=status.HTTP_200_OK)
 
 
-
+# view-loan/loan_id
 class ViewLoanDetails(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
@@ -271,7 +271,7 @@ class ViewLoanDetails(APIView):
 
         return Response(response_data)
 
-
+# /view-loans/customer_id
 class ViewLoansByCustomer(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
